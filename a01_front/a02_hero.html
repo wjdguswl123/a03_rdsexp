@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HERO WORLD - 영웅 검색</title>
+
+    <!-- jQuery 불러오기 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "맑은 고딕", sans-serif;
+            color: white;
+            background: linear-gradient(135deg, #10152f, #25245b, #401c59);
+        }
+
+        header {
+            padding: 30px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            margin: 0;
+            color: #ffd76a;
+            font-size: 38px;
+            letter-spacing: 5px;
+        }
+
+        header p {
+            color: #c7c9e8;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 50px auto;
+        }
+
+        .search-box {
+            padding: 30px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .search-box h2 {
+            color: #ffd76a;
+        }
+
+        .search-area {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .search-area input {
+            flex: 1;
+            min-width: 180px;
+            padding: 15px;
+            border: 1px solid #7779b9;
+            border-radius: 10px;
+            background: #171b3c;
+            color: white;
+            font-size: 16px;
+        }
+
+        .search-area input::placeholder {
+            color: #a5a8c8;
+        }
+
+        .search-area button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ffd76a, #ff9d50);
+            color: #292044;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .search-area button:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 35px 0 20px;
+        }
+
+        .result-title h2 {
+            color: #ffd76a;
+        }
+
+        #resultCount {
+            color: #b8bbdf;
+        }
+
+        .hero-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+        }
+
+        .hero-card {
+            padding: 25px;
+            border-radius: 18px;
+            background: linear-gradient(145deg, #34396e, #20254c);
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: 0.3s;
+        }
+
+        .hero-card:hover {
+            transform: translateY(-7px);
+            border-color: #ffd76a;
+        }
+
+        .hero-icon {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .hero-card h3 {
+            color: #ffd76a;
+            font-size: 23px;
+        }
+
+        .hero-card p {
+            padding: 8px 0;
+            margin: 0;
+            color: #d5d7f0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .empty {
+            grid-column: 1 / -1;
+            padding: 45px;
+            text-align: center;
+            color: #c7c9e8;
+            background: rgba(255,255,255,0.06);
+            border-radius: 15px;
+        }
+
+        footer {
+            margin-top: 70px;
+            padding: 25px;
+            text-align: center;
+            color: #9296bd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>⚔ HERO WORLD ⚔</h1>
+        <p>나만의 영웅을 찾아 떠나는 모험</p>
+    </header>
+
+    <main class="container">
+
+        <!-- 검색 영역 -->
+        <section class="search-box">
+            <h2>🔍 영웅 검색</h2>
+
+            <div class="search-area">
+
+                <input
+                    type="text"
+                    id="nickname"
+                    placeholder="캐릭터 닉네임을 입력하세요"
+                >
+
+                <input
+                    type="text"
+                    id="job_class"
+                    placeholder="직업을 입력하세요"
+                >
+
+                <button id="searchBtn">검색하기</button>
+
+            </div>
+        </section>
+
+        <!-- 검색 결과 영역 -->
+        <section>
+
+            <div class="result-title">
+                <h2>🏆 영웅 목록</h2>
+                <span id="resultCount">검색 결과 대기 중</span>
+            </div>
+
+            <div id="heroList" class="hero-list">
+                <div class="empty">검색 버튼을 눌러 영웅을 찾아보세요!</div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        HERO WORLD © 2026 | FIND YOUR HERO
+    </footer>
+
+
+    <!-- jQuery AJAX -->
+    <script>
+
+        // 1. 검색 버튼 클릭
+        $("#searchBtn").click(function() {
+
+            // 2. 입력창의 값 가져오기
+            let nickname = $("#nickname").val();
+            let job_class = $("#job_class").val();
+
+            // 3. FastAPI 서버에 검색 요청
+            $.ajax({
+
+                url: "/api/heros",
+                type: "GET",
+
+                data: {
+                    nickname: nickname,
+                    job_class: job_class
+                },
+
+                // 4. 서버에서 데이터를 정상적으로 받았을 때
+                success: function(data) {
+
+                    // 기존 검색 결과 삭제
+                    $("#heroList").empty();
+
+                    // 검색 결과 개수 표시
+                    $("#resultCount").text(
+                        "검색 결과 " + data.length + "명"
+                    );
+
+                    // 검색 결과가 없는 경우
+                    if (data.length === 0) {
+
+                        $("#heroList").html(
+                            '<div class="empty">검색 결과가 없습니다.</div>'
+                        );
+
+                        return;
+                    }
+
+                    // 검색 결과를 하나씩 반복
+                    $.each(data, function(index, hero) {
+
+                        // 캐릭터 카드 생성
+                        let card = `
+                            <div class="hero-card">
+
+                                <div class="hero-icon">🛡️</div>
+
+                                <h3>${hero.nickname ?? "이름 없음"}</h3>
+
+                                <p>직업 : ${hero.job_class ?? "미정"}</p>
+
+                                <p>캐릭터 번호 : ${hero.hero_id ?? "-"}</p>
+
+                            </div>
+                        `;
+
+                        // 화면에 카드 추가
+                        $("#heroList").append(card);
+
+                    });
+
+                },
+
+                // 5. 서버 요청에 실패했을 때
+                error: function(xhr) {
+
+                    $("#heroList").html(
+                        '<div class="empty">서버와 통신할 수 없습니다.</div>'
+                    );
+
+                    $("#resultCount").text("검색 실패");
+
+                    console.log(xhr.responseText);
+
+                }
+
+            });
+
+        });
+
+
+        // 6. 엔터 키를 눌러도 검색
+        $("#nickname, #job_class").keypress(function(e) {
+
+            if (e.which === 13) {
+                $("#searchBtn").click();
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>
